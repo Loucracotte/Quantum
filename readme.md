@@ -1,6 +1,10 @@
 # Quantum
 Quantum est une interface élégante et intuitive qui déverrouille le plein potentiel de Cohere, une plateforme d'intelligence artificielle. Conçu pour être convivial, Quantum vous offre un accès direct aux capacités de Cohere, vous permettant de créer et d'innover comme jamais auparavant.
 
+# Interface 
+
+![alt text](./media/interface.jpeg)
+
 # Guide d'utilisation de Quantum
 Accédez au [tableau de bord Cohere](https://dashboard.cohere.com/).
 Rendez-vous dans la section "API Keys" et générez une nouvelle clé d'API.
