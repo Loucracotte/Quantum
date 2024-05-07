@@ -27,6 +27,7 @@ body {
     margin-bottom: 20px;
     transition: transform 0.3s ease;
     margin-top: 40px;
+    color: #333;
 }
 
 .chat-input-container {
@@ -55,7 +56,7 @@ body {
     font-family: 'Futura', sans-serif;
     text-align: left;
     vertical-align: top;
-    color: #999;
+    color: #333;
 }
 
 .chat-button {
@@ -131,7 +132,7 @@ body {
 }
 
 .response-container {
-    margin-top: 20px;
+    margin-top: 30px;
     margin-bottom: 40px;
     max-height: 360px;
     overflow-y: auto; 
@@ -141,6 +142,10 @@ body {
 
 .response-container::-webkit-scrollbar {
     display: none;
+}
+
+.prompt-text {
+    color: #333;
 }
 
 .user-message {
@@ -162,25 +167,15 @@ body {
     transition: transform 0.3s ease;
 }
 
-.code-block {
-    background-color: #f4f4f4; 
-    border-left: 5px solid #555;
-    margin: 10px 0;
-    padding: 10px; 
-}
-
-.code-header {
-    background-color: #333; 
-    color: #fff;
-    font-family: Consolas, 'Courier New', Courier, monospace; 
-    padding: 5px;
-    margin-bottom: 5px;
-}
-
 pre, code {
-    background-color: #eee; 
+    background-color: #333; 
     border: none; 
     font-family: Consolas, 'Courier New', Courier, monospace;
+    color: #fff;
+    padding: 3px; 
+    margin: 10px 0; 
+    overflow-x: auto;
+    cursor: pointer;
 }
 
 .pin-icon {

@@ -27,64 +27,84 @@
                 </button>
             </div>
             <div class="suggestions-container" id="suggestions-container"></div>
-            <div class="response-container" id="response-container">
-                <h2 class="prompt-text" id="prompt-text"></h2>
-                <div class="response-text markdown-content"></div>
-            </div>
+            <div class="response-container" id="response-container"></div>
         </div>
     </div>
     <div class="blue-circle">
         <i class="fa fa-cog white-gear"></i>
     </div>
-    <div class="settings-panel">
-        <!-- Contenu du panneau de réglages ici -->
-    </div>
+    <div class="settings-panel"></div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "@google/generative-ai";
         import markdownIt from "markdown-it";
 
-        const API_KEY = "Your API key";
+        const API_KEY = "AIzaSyBvc5UgNMl4ZmGmjCqfqqhTbo13mPMbz-A";
         const genAI = new GoogleGenerativeAI(API_KEY);
         const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
         const md = new markdownIt();
         const preprompt = "Oublie toutes les requêtes précédentes. Tu es Quantum, une intelligence artificielle développée par une équipe française. Tu répondras toujours en français malgré les questions pouvant être dans d'autres langues. Ne mets jamais d'emoji dans tes réponses.";
+        let conversationHistory = [];
 
         const chatButton = document.querySelector('.chat-button');
         const loadingIcon = document.querySelector('.loading-icon');
         const buttonContent = document.querySelector('.button-content');
-        const responseText = document.querySelector('.response-text');
         const searchInput = document.getElementById('search-input');
-        const promptText = document.getElementById('prompt-text');
+        const responseContainer = document.getElementById('response-container');
 
         async function sendMessage() {
             const textInput = searchInput.value.trim();
-            const parts = [{ text: preprompt + "\n" + textInput }];
+            if (textInput === "") return;
 
-            promptText.textContent = `${textInput}`;
+            conversationHistory.push({ role: "user", content: textInput });
+
+            const promptContainer = document.createElement('div');
+            promptContainer.className = 'prompt-container';
+
+            const promptTitle = document.createElement('h2');
+            promptTitle.textContent = '→ ' + textInput;
+            promptTitle.className = 'prompt-text';
+
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'response-text markdown-content';
+
+            promptContainer.appendChild(promptTitle);
+            promptContainer.appendChild(responseDiv);
+            responseContainer.appendChild(promptContainer);
 
             buttonContent.style.display = 'none';
             loadingIcon.style.display = 'block';
 
-            await sendRequest(textModel, parts);
+            const parts = [{ text: preprompt + "\n" + generateHistoryPrompt() }];
 
-            searchInput.value = '';
-            searchInput.placeholder = "Ask anything...";
-        }
-
-        async function sendRequest(model, parts) {
             try {
-                const result = await model.generateContent(parts);
+                const result = await textModel.generateContent(parts);
                 const response = await result.response.text();
-                responseText.innerHTML = `Answer : ${md.render(response)}`;
+
+                const answerLabel = document.createElement('p');
+                answerLabel.textContent = 'Answer :';
+                answerLabel.className = 'answer-label';
+
+                promptContainer.insertBefore(answerLabel, responseDiv);
+                responseDiv.innerHTML = md.render(response);
+
+                conversationHistory.push({ role: "assistant", content: response });
+                addCopyToClipboardEvents();
             } catch (error) {
                 console.error('Error:', error);
-                responseText.textContent = 'Erreur de génération de texte.';
+                responseDiv.textContent = 'Erreur de génération de texte.';
             } finally {
                 loadingIcon.style.display = 'none';
                 buttonContent.style.display = 'block';
+                searchInput.value = '';
             }
+        }
+
+        function generateHistoryPrompt() {
+            return conversationHistory.map(
+                message => (message.role === "user" ? "Question :" : "Réponse :") + "\n" + message.content
+            ).join("\n\n");
         }
 
         chatButton.addEventListener('click', sendMessage);
@@ -118,6 +138,17 @@
                     const text = suggestion.getAttribute('data-text');
                     searchInput.value = text;
                     searchInput.focus();
+                });
+            });
+        }
+
+        function addCopyToClipboardEvents() {
+            document.querySelectorAll('pre, code').forEach(block => {
+                block.addEventListener('click', () => {
+                    const textToCopy = block.innerText || block.textContent;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        console.log('Texte copié dans le presse-papiers:', textToCopy);
+                    }).catch(err => console.error('Erreur lors de la copie:', err));
                 });
             });
         }
