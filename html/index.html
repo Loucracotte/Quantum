@@ -6,265 +6,123 @@
     <link rel="stylesheet" href="../css/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <title>Quantum</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai",
+                "markdown-it": "https://esm.run/markdown-it"
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="main-content">
-    <div class="chat-container">
-        <h1 class="chat-title" id="chat-title">Where knowledge begins</h1>
-        <div class="chat-input-container" id="chat-input-container">
-            <input type="file" id="file-input" accept=".pdf, image/*, .txt" style="display: none;">
-            <label for="file-input" class="fa fa-thumbtack pin-icon" aria-hidden="true"></label>
-            <div id="file-preview" class="fa fa-file" aria-hidden="true" style="display: none;"></div> 
-            <input type="text" id="search-input" class="chat-input" placeholder="Ask anything..." value="">
-            <button class="chat-button">
-                <span class="button-content">&#8250;</span>
-                <div class="loading-icon"></div>
-            </button>                     
-        </div>      
-        <div class="suggestions-container" id="suggestions-container">
+        <div class="chat-container">
+            <h1 class="chat-title" id="chat-title">Where knowledge begins</h1>
+            <div class="chat-input-container" id="chat-input-container">
+                <input type="text" id="search-input" class="chat-input" placeholder="Ask anything...">
+                <button class="chat-button">
+                    <span class="button-content">&#8250;</span>
+                    <div class="loading-icon" style="display: none;"></div>
+                </button>
+            </div>
+            <div class="suggestions-container" id="suggestions-container"></div>
+            <div class="response-container" id="response-container">
+                <h2 class="prompt-text" id="prompt-text"></h2>
+                <div class="response-text markdown-content"></div>
+            </div>
         </div>
-        <div class="response-container" id="response-container">
-            <p class="user-message"></p>
-            <p class="response-text"></p>
-            <button class="copy-button" onclick="copyResponse()">
-                <img src="../media/clipboard.png" alt="Copier" class="clipboard-icon">
-            </button>            
-        </div>        
-    </div>
     </div>
     <div class="blue-circle">
         <i class="fa fa-cog white-gear"></i>
     </div>
     <div class="settings-panel">
         <!-- Contenu du panneau de réglages ici -->
-    </div>      
+    </div>
+
     <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        import markdownIt from "markdown-it";
 
-        // Fenêtre des réglages
+        const API_KEY = "Your API key";
+        const genAI = new GoogleGenerativeAI(API_KEY);
+        const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const blueCircle = document.querySelector('.blue-circle');
-            const settingsPanel = document.querySelector('.settings-panel');
-        
-            blueCircle.addEventListener('click', function() {
-                const isOpen = blueCircle.classList.contains('active');
-                if (isOpen) {
-                    // Fermer le panneau
-                    settingsPanel.style.left = '-300px';
-                    blueCircle.style.left = '20px'; 
-                    blueCircle.classList.remove('active');
-                } else {
-                    // Ouvrir le panneau
-                    settingsPanel.style.left = '0px';
-                    blueCircle.style.left = '320px'; 
-                    blueCircle.classList.add('active');
-                }
-            });
-        });
-        
-        // Bouton de copie
+        const md = new markdownIt();
+        const preprompt = "Oublie toutes les requêtes précédentes. Tu es Quantum, une intelligence artificielle développée par une équipe française. Tu répondras toujours en français malgré les questions pouvant être dans d'autres langues. Ne mets jamais d'emoji dans tes réponses.";
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const copyButton = document.querySelector('.copy-button');
-            copyButton.addEventListener('click', function() {
-                const responseText = document.querySelector('.response-text').textContent;
-                navigator.clipboard.writeText(responseText)
-                    .then(() => {
-                        alert('Copied to clipboard.');
-                    })
-                    .catch(err => {
-                        console.error('Erreur lors de la copie :', err);
-                    });
-            });
-        });    
-        
-        // Formatage du texte de réponse
-
-        function formatResponseText(text) {
-            let formattedText = text;
-        
-            formattedText = formattedText.replace(/(#+) (.+)/g, function(match, hashes, content) {
-                const level = hashes.length;
-                return `<h${level}>${content}</h${level}>`;
-            });
-        
-            formattedText = formattedText.replace(/^(\*|-) (.+)/gm, "<li>$2</li>");
-        
-            formattedText = formattedText.replace(/^\d+\. (.+)/gm, "<li>$1</li>");
-        
-            formattedText = formattedText.replace(/^> (.+)/gm, "<blockquote>$1</blockquote>");
-        
-            formattedText = formattedText.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-        
-            formattedText = formattedText.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        
-            formattedText = formattedText.replace(/`([^`]+)`/g, "<code>$1</code>");
-        
-            formattedText = formattedText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-                
-            return formattedText;
-        }
-        
-        
-        function escapeHTML(html) {
-            const text = document.createTextNode(html);
-            const p = document.createElement('p');
-            p.appendChild(text);
-            return p.innerHTML;
-        }   
-        
-        // Initialisation de l'API Cohere
-        
-        import { CohereClient } from "https://cdn.skypack.dev/cohere-ai@latest";
-
-        const API_KEY = "Your api key";
-        const cohere = new CohereClient({ token: API_KEY });
-
-        const chatInput = document.getElementById('search-input');
         const chatButton = document.querySelector('.chat-button');
-        const responseContainer = document.querySelector('#response-container');
-        const userMessage = document.querySelector('.user-message');
+        const loadingIcon = document.querySelector('.loading-icon');
+        const buttonContent = document.querySelector('.button-content');
         const responseText = document.querySelector('.response-text');
-        const suggestionsContainer = document.querySelector('#suggestions-container');
+        const searchInput = document.getElementById('search-input');
+        const promptText = document.getElementById('prompt-text');
 
-        const preprompt = "Oublie toutes les requêtes précédentes. Tu es Quantum, une intelligence artificielle développée par une équipe Française. Tu répondras toujours en Français malgré les questions pouvant être dans d'autres langues.";
+        async function sendMessage() {
+            const textInput = searchInput.value.trim();
+            const parts = [{ text: preprompt + "\n" + textInput }];
 
-        // Suggestions aléatoires
+            promptText.textContent = `${textInput}`;
 
-        const allSuggestions = [
-            "History of France", "Healthy restaurants in Lyon", "Best hiking trails in the Alps",
-            "Latest tech news", "Top tourist attractions in Paris", "Learn Python programming",
-            "Best coffee shops in Lyon", "Upcoming music festivals in Europe", "How to start a business",
-            "French Revolutionary Wars", "What is AI ?", "Deep sea mysteries",
-            "Cybersecurity basics", "Ancient Egyptian culture", "Climate change effects",
-            "Best movies of 2020", "How to make homemade bread", "Space exploration today",
-            "Digital marketing tips", "Improving mental health", "Sustainable living practices",
-            "Historical landmarks of Europe", "Coping with anxiety", "Blockchain explained",
-            "Tips for healthy eating", "Why is the sky blue ?", "Quantum computing", "Facts about Mars",
-            "Improving your workout", "Photography tips for beginners", "French cooking recipes",
-            "Economic impacts of global warming", "Meditation and mindfulness", "How to write a resume",
-            "Artificial intelligence in healthcare", "Travel tips for Japan", "Learning French basics",
-            "Virtual reality applications", "5G technology", "Electric vehicle advancements",
-            "World War II facts", "The rise of cryptocurrencies", "How to save money",
-            "Building a PC", "Understanding the stock market", "Corporate social responsibility",
-            "The history of the internet", "Animal conservation efforts", "The science of happiness",
-            "Programming in JavaScript", "Urban farming innovations"
-        ];
+            buttonContent.style.display = 'none';
+            loadingIcon.style.display = 'block';
 
-        function loadRandomSuggestions() {
-            console.log("Chargement des suggestions aléatoires"); 
-            const shuffled = allSuggestions.sort(() => 0.5 - Math.random());
-            let selected = shuffled.slice(0, 5);
-            suggestionsContainer.innerHTML = '<span class="try-asking">Try asking</span>';
-            selected.forEach(suggestion => {
-                suggestionsContainer.innerHTML += `<span class="suggestion" data-text="${suggestion}">${suggestion}</span>`;
-            });
-            addClickEventToSuggestions();
-        }        
+            await sendRequest(textModel, parts);
+
+            searchInput.value = '';
+            searchInput.placeholder = "Ask anything...";
+        }
+
+        async function sendRequest(model, parts) {
+            try {
+                const result = await model.generateContent(parts);
+                const response = await result.response.text();
+                responseText.innerHTML = `Answer : ${md.render(response)}`;
+            } catch (error) {
+                console.error('Error:', error);
+                responseText.textContent = 'Erreur de génération de texte.';
+            } finally {
+                loadingIcon.style.display = 'none';
+                buttonContent.style.display = 'block';
+            }
+        }
+
+        chatButton.addEventListener('click', sendMessage);
+
+        searchInput.addEventListener('keyup', event => {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+        async function loadSuggestions() {
+            try {
+                const response = await fetch('../suggest.json');
+                const suggestions = await response.json();
+                const shuffled = suggestions.sort(() => 0.5 - Math.random());
+                const selected = shuffled.slice(0, 4);
+                const suggestionsContainer = document.getElementById('suggestions-container');
+                suggestionsContainer.innerHTML = '<span class="try-asking">Try asking</span>';
+                selected.forEach(suggestion => {
+                    suggestionsContainer.innerHTML += `<span class="suggestion" data-text="${suggestion}">${suggestion}</span>`;
+                });
+                addClickEventToSuggestions();
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+            }
+        }
 
         function addClickEventToSuggestions() {
             document.querySelectorAll('.suggestion').forEach(suggestion => {
                 suggestion.addEventListener('click', () => {
                     const text = suggestion.getAttribute('data-text');
-                    chatInput.value = text;
-                    chatInput.focus();
+                    searchInput.value = text;
+                    searchInput.focus();
                 });
             });
         }
 
-        // Gestion des fichiers
-
-        document.addEventListener('DOMContentLoaded', function() {
-
-            const fileInput = document.getElementById('file-input');
-            const filePreview = document.getElementById('file-preview');
-        
-            document.querySelector('.pin-icon').addEventListener('click', function(event) {
-                event.preventDefault(); 
-                if (!fileInput.value) {
-                    fileInput.click(); 
-                }
-            });
-        
-            fileInput.addEventListener('change', function(event) {
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const fileURL = URL.createObjectURL(file);
-                    filePreview.style.display = 'inline-block';
-                    filePreview.onclick = () => window.open(fileURL, '_blank');
-                } else {
-                    filePreview.style.display = 'none';
-                }
-            });
-            loadRandomSuggestions();
-        });        
-
-        // Envoi de la requête
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const chatInput = document.getElementById('search-input');
-            const chatButton = document.querySelector('.chat-button');
-            const userMessage = document.querySelector('.user-message');
-            const responseText = document.querySelector('.response-text');
-            const responseContainer = document.querySelector('#response-container');
-            const loadingIcon = document.querySelector('.loading-icon');
-            const buttonContent = document.querySelector('.button-content');
-        
-            async function sendRequest() {
-                if (!chatInput.value.trim()) return;
-        
-                userMessage.textContent = `You : ${chatInput.value}`;
-                const prompt = preprompt + "\n" + chatInput.value;
-                responseContainer.classList.add('active'); 
-        
-                buttonContent.style.display = 'none';
-                loadingIcon.style.display = 'block';
-        
-                try {
-                    responseText.innerHTML = '';
-                    const stream = await cohere.chatStream({
-                        model: "command-r-plus",
-                        message: prompt,
-                        temperature: 0.3,
-                        chatHistory: [],
-                        promptTruncation: "AUTO",
-                        connectors: [{"id":"web-search"}]
-                    });
-        
-                    let fullResponse = '';
-                    for await (const chat of stream) {
-                        if (chat.eventType === "text-generation") {
-                            fullResponse += chat.text;
-                        }
-                    }
-                    responseText.innerHTML = formatResponseText(`Quantum : ${fullResponse}`); 
-                } catch (error) {
-                    console.error('Error:', error);
-                    responseText.textContent = 'Désolé, une erreur est survenue lors de la génération de texte.';
-                }
-        
-                loadingIcon.style.display = 'none';
-                buttonContent.style.display = 'block';
-                chatInput.value = '';
-            }               
-        
-            chatButton.addEventListener('click', sendRequest);
-        
-            chatInput.addEventListener('keyup', (event) => {
-                if (event.key === "Enter") {
-                    sendRequest();
-                }
-            });
-        });        
-        
-        chatButton.addEventListener('click', sendRequest);
-
-        chatInput.addEventListener('keyup', (event) => {
-            if (event.key === "Enter") {
-                sendRequest();
-            }
-        });
-        
+        document.addEventListener('DOMContentLoaded', loadSuggestions);
     </script>
 </body>
 </html>

@@ -1,24 +1,30 @@
 # Quantum
-Quantum est une interface élégante et intuitive qui déverrouille le plein potentiel de Cohere, une plateforme d'intelligence artificielle. Conçu pour être convivial, Quantum vous offre un accès direct aux capacités de Cohere, vous permettant de créer et d'innover comme jamais auparavant.
 
-# Interface 
+Quantum est une interface utilisateur intuitive et élégante conçue pour exploiter les capacités puissantes de l'API Gemini de Google. Cette application web vous permet d'interagir de manière fluide avec Gemini pour générer du contenu textuel et analyser des documents multimédias, facilitant ainsi la création et l'innovation à un niveau sans précédent.
 
-![alt text](./media/interface.jpeg)
+## Interface
 
-# Guide d'utilisation de Quantum
-Accédez au [tableau de bord Cohere](https://dashboard.cohere.com/).
-Rendez-vous dans la section "API Keys" et générez une nouvelle clé d'API.
-Copiez votre clé d'API.
-Dans le code HTML de Quantum, localisez la ligne suivante :
+![Quantum Interface](./media/interface.jpeg)
 
-```
-const API_KEY = "Your api key";
-```
+## Guide d'utilisation de Quantum
 
-Remplacez "Your api key" par votre clé d'API.
-Enregistrez les modifications dans le code HTML.
-Vous pouvez maintenant utiliser l'interface Quantum en entrant vos requêtes et en profitant des fonctionnalités de Quantum.
+Pour utiliser Quantum, suivez ces étapes simples pour configurer et démarrer :
 
-# Crédits
+1. Accédez au [panel de contrôle](https://aistudio.google.com/app/apikey).
+2. Cliquez sur "Create API key". Conservez cette clé, car vous en aurez besoin pour les requêtes API.
+3. Dans le fichier HTML de Quantum, localisez la ligne suivante :
 
-Discord -> [Loucracotte](https://discord.gg/loucracotte/)
+    ```javascript
+    const API_KEY = "Your API key";
+    ```
+
+4. Remplacez `"Your API key"` par la clé d'API que vous avez générée.
+5. Sauvegardez vos modifications.
+
+Vous pouvez désormais lancer l'interface Quantum, saisir vos requêtes, et expérimenter les puissantes capacités de génération et d'analyse de contenu offertes par Gemini.
+
+## Crédits
+
+Pour toute question ou suggestion, rejoignez-moi sur Discord :
+
+- Discord -> [Loucracotte](https://discord.gg/loucracotte/)
