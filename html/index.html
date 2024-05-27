@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,32 +16,34 @@
     </script>
 </head>
 <body>
+    <div class="blocked-message">Le site est bloqué sur les écrans de moins de 700px.</div>
     <div class="main-content">
         <div class="chat-container">
             <h1 class="chat-title" id="chat-title">Where knowledge begins</h1>
             <div class="chat-input-container" id="chat-input-container">
-                <input type="text" id="search-input" class="chat-input" placeholder="Ask anything...">
-                <button class="chat-button">
-                    <span class="button-content">&#8250;</span>
-                    <div class="loading-icon" style="display: none;"></div>
-                </button>
+                <div class="file-preview-container" id="file-preview-container"></div>
+                <div class="input-row">
+                    <i class="fa fa-paperclip pin-icon"></i>
+                    <input type="file" id="file-input" class="file-input" multiple>
+                    <input type="text" id="search-input" class="chat-input" placeholder="Ask anything...">
+                    <button class="chat-button">
+                        <span class="button-content">&#8250;</span>
+                        <div class="loading-icon" style="display: none;"></div>
+                    </button>
+                </div>
             </div>
             <div class="suggestions-container" id="suggestions-container"></div>
             <div class="response-container" id="response-container"></div>
         </div>
     </div>
-    <div class="blue-circle">
-        <i class="fa fa-cog white-gear"></i>
-    </div>
-    <div class="settings-panel"></div>
 
     <script type="module">
         import { GoogleGenerativeAI } from "@google/generative-ai";
         import markdownIt from "markdown-it";
 
-        const API_KEY = "AIzaSyBvc5UgNMl4ZmGmjCqfqqhTbo13mPMbz-A";
+        const API_KEY = "Your API key";
         const genAI = new GoogleGenerativeAI(API_KEY);
-        const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+        const textModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const md = new markdownIt();
         const preprompt = "Oublie toutes les requêtes précédentes. Tu es Quantum, une intelligence artificielle développée par une équipe française. Tu répondras toujours en français malgré les questions pouvant être dans d'autres langues. Ne mets jamais d'emoji dans tes réponses.";
@@ -52,6 +54,71 @@
         const buttonContent = document.querySelector('.button-content');
         const searchInput = document.getElementById('search-input');
         const responseContainer = document.getElementById('response-container');
+        const fileInput = document.getElementById('file-input');
+        const filePreviewContainer = document.getElementById('file-preview-container');
+        const pinIcon = document.querySelector('.pin-icon');
+
+        let uploadedFiles = [];
+
+        pinIcon.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            handleFiles([...fileInput.files]);
+        });
+
+        function handleFiles(files) {
+            files.forEach(file => {
+                uploadedFiles.push(file);
+                const filePreviewItem = document.createElement('div');
+                filePreviewItem.className = 'file-preview-item';
+                filePreviewItem.innerHTML = `
+                    <div class="file-icon"><i class="fa fa-file"></i></div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-type">${file.type}</div>
+                    </div>
+                `;
+                filePreviewItem.addEventListener('click', () => {
+                    uploadedFiles = uploadedFiles.filter(f => f !== file);
+                    filePreviewContainer.removeChild(filePreviewItem);
+                    if (uploadedFiles.length === 0) {
+                        filePreviewContainer.classList.remove('active');
+                        filePreviewContainer.style.marginLeft = '0';
+                    }
+                });
+                filePreviewContainer.appendChild(filePreviewItem);
+            });
+
+            if (uploadedFiles.length > 0) {
+                filePreviewContainer.classList.add('active');
+                filePreviewContainer.style.marginLeft = '20px';  
+            } else {
+                filePreviewContainer.classList.remove('active');
+                filePreviewContainer.style.marginLeft = '0'; 
+            }
+        }
+
+        document.addEventListener('dragover', (event) => {
+            event.preventDefault();
+        });
+
+        document.addEventListener('drop', (event) => {
+            event.preventDefault();
+            handleFiles([...event.dataTransfer.files]);
+        });
+
+        async function fileToGenerativePart(file) {
+            const base64EncodedDataPromise = new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+            return {
+                inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+            };
+        }
 
         async function sendMessage() {
             const textInput = searchInput.value.trim();
@@ -69,6 +136,24 @@
             const responseDiv = document.createElement('div');
             responseDiv.className = 'response-text markdown-content';
 
+            if (uploadedFiles.length > 0) {
+                const filePreviews = document.createElement('div');
+                filePreviews.className = 'file-preview-container'; 
+                uploadedFiles.forEach(file => {
+                    const filePreviewItem = document.createElement('div');
+                    filePreviewItem.className = 'file-preview-item';
+                    filePreviewItem.innerHTML = `
+                        <div class="file-icon"><i class="fa fa-file"></i></div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-type">${file.type}</div>
+                        </div>
+                    `;
+                    filePreviews.appendChild(filePreviewItem);
+                });
+                promptContainer.appendChild(filePreviews);
+            }
+
             promptContainer.appendChild(promptTitle);
             promptContainer.appendChild(responseDiv);
             responseContainer.appendChild(promptContainer);
@@ -77,19 +162,21 @@
             loadingIcon.style.display = 'block';
 
             const parts = [{ text: preprompt + "\n" + generateHistoryPrompt() }];
+            const imageParts = await Promise.all(uploadedFiles.map(fileToGenerativePart));
+            parts.push(...imageParts);
 
             try {
-                const result = await textModel.generateContent(parts);
-                const response = await result.response.text();
-
-                const answerLabel = document.createElement('p');
-                answerLabel.textContent = 'Answer :';
-                answerLabel.className = 'answer-label';
-
-                promptContainer.insertBefore(answerLabel, responseDiv);
-                responseDiv.innerHTML = md.render(response);
-
-                conversationHistory.push({ role: "assistant", content: response });
+                const { totalTokens } = await textModel.countTokens(parts);
+                const result = await textModel.generateContentStream(parts);
+                let responseText = '';
+                for await (const chunk of result.stream) {
+                    const chunkText = chunk.text();
+                    responseText += chunkText;
+                    responseDiv.innerHTML = md.render(responseText);
+                }
+                responseText += `\n\nTokens : ${totalTokens}`;
+                responseDiv.innerHTML = md.render(responseText);
+                conversationHistory.push({ role: "assistant", content: responseText });
                 addCopyToClipboardEvents();
             } catch (error) {
                 console.error('Error:', error);
@@ -98,6 +185,11 @@
                 loadingIcon.style.display = 'none';
                 buttonContent.style.display = 'block';
                 searchInput.value = '';
+                fileInput.value = '';  
+                uploadedFiles = [];
+                filePreviewContainer.innerHTML = ''; 
+                filePreviewContainer.classList.remove('active');
+                filePreviewContainer.style.marginLeft = '0'; 
             }
         }
 

@@ -6,6 +6,7 @@ Quantum est une interface utilisateur intuitive et élégante conçue pour explo
 
 ![Quantum Interface](./media/interface.jpeg)
 ![Quantum Interface](./media/Quantum.gif)
+![Quantum Interface](./media/Quantum1.gif)
 
 ## Guide d'utilisation de Quantum
 
