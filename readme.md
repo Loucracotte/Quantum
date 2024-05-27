@@ -29,4 +29,4 @@ Vous pouvez désormais lancer l'interface Quantum, saisir vos requêtes, et exp�
 
 Pour toute question ou suggestion, rejoignez-moi sur Discord :
 
-- Discord -> [Loucracotte](https://discord.gg/loucracotte/)
+- Discord -> [Lacracotte](https://discord.gg/loucracotte/)
